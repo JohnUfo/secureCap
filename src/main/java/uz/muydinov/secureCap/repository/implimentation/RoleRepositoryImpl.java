@@ -14,17 +14,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static uz.muydinov.secureCap.enumeration.RoleType.ROLE_USER;
 import static uz.muydinov.secureCap.query.RoleQuery.*;
 
+@RequiredArgsConstructor
 @Repository
 @Slf4j
 public class RoleRepositoryImpl implements RoleRepository<Role> {
     private final NamedParameterJdbcTemplate jdbc;
-
-    public RoleRepositoryImpl(NamedParameterJdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
 
     @Override
     public Role create(Role data) {
@@ -56,10 +54,12 @@ public class RoleRepositoryImpl implements RoleRepository<Role> {
 
         try {
             Role role = jdbc.queryForObject(SELECT_ROLE_BY_NAME_QUERY, Map.of("name", roleName), new RoleRowMapper());
-            jdbc.update(INSERT_ROLE_TO_USER_QUERY, Map.of("userId", userId, "roleId", role.getId()));
+            jdbc.update(INSERT_ROLE_TO_USER_QUERY, Map.of("userId", userId, "roleId",requireNonNull(role).getId()));
         } catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
             throw new ApiException("No role found by name: " + ROLE_USER.name());
         } catch (Exception exception) {
+            log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again.");
         }
     }

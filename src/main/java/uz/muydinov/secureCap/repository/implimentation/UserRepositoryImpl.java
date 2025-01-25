@@ -1,7 +1,6 @@
 package uz.muydinov.secureCap.repository.implimentation;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -27,18 +26,12 @@ import static uz.muydinov.secureCap.enumeration.VerificationType.ACCOUNT;
 import static uz.muydinov.secureCap.query.UserQuery.*;
 
 @Repository
+@RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
-
-    @Autowired
-    public UserRepositoryImpl(NamedParameterJdbcTemplate jdbc, RoleRepository<Role> roleRepository, BCryptPasswordEncoder encoder) {
-        this.jdbc = jdbc;
-        this.roleRepository = roleRepository;
-        this.encoder = encoder;
-    }
 
     @Override
     public User create(User user) {
@@ -48,11 +41,18 @@ public class UserRepositoryImpl implements UserRepository {
             KeyHolder holder = new GeneratedKeyHolder();
             SqlParameterSource parameters = getSqlParameterSource(user);
             jdbc.update(INSERT_USER_QUERY, parameters, holder);
-            user.setId(requireNonNull(holder.getKey()).longValue());
+
+            // Retrieve the generated ID
+            Map<String, Object> keys = holder.getKeys();
+            if (keys != null) {
+                user.setId(((Number) keys.get("id")).longValue());
+            }
+
+            // Add role to the user and set additional properties
             roleRepository.addRoleToUser(user.getId(), ROLE_USER.name());
             String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), ACCOUNT.getType());
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, Map.of("userId", user.getId(), "url", verificationUrl));
-//            emailService.sendVerificationUrl(user.getFirstName(),user.getEmail(),verificationUrl, ACCOUNT);
+            // emailService.sendVerificationUrl(user.getFirstName(),user.getEmail(),verificationUrl, ACCOUNT);
             user.setEnabled(false);
             user.setNonLocked(true);
             return user;
@@ -89,6 +89,7 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("password", encoder.encode(user.getPassword())
                 );
     }
+
 
     private Integer getEmailCount(String email) {
         return jdbc.queryForObject(COUNT_USER_EMAIL_QUERY, Map.of("email", email), Integer.class);

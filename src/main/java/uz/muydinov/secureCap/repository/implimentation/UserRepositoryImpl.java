@@ -1,6 +1,7 @@
 package uz.muydinov.secureCap.repository.implimentation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -26,13 +27,13 @@ import static uz.muydinov.secureCap.enumeration.VerificationType.ACCOUNT;
 import static uz.muydinov.secureCap.query.UserQuery.*;
 
 @Repository
-@Slf4j
 public class UserRepositoryImpl implements UserRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final RoleRepository<Role> roleRepository;
     private final BCryptPasswordEncoder encoder;
 
+    @Autowired
     public UserRepositoryImpl(NamedParameterJdbcTemplate jdbc, RoleRepository<Role> roleRepository, BCryptPasswordEncoder encoder) {
         this.jdbc = jdbc;
         this.roleRepository = roleRepository;

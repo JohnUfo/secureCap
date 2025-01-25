@@ -18,10 +18,13 @@ import static uz.muydinov.secureCap.enumeration.RoleType.ROLE_USER;
 import static uz.muydinov.secureCap.query.RoleQuery.*;
 
 @Repository
-@RequiredArgsConstructor
 @Slf4j
 public class RoleRepositoryImpl implements RoleRepository<Role> {
     private final NamedParameterJdbcTemplate jdbc;
+
+    public RoleRepositoryImpl(NamedParameterJdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
 
     @Override
     public Role create(Role data) {
@@ -52,8 +55,7 @@ public class RoleRepositoryImpl implements RoleRepository<Role> {
     public void addRoleToUser(Long userId, String roleName) {
 
         try {
-            log.info("Adding role {} to user id: {}", roleName, userId);
-            Role role = jdbc.queryForObject(SELECT_ROLE_BY_NAME_QUERY, Map.of("roleName", roleName), new RoleRowMapper());
+            Role role = jdbc.queryForObject(SELECT_ROLE_BY_NAME_QUERY, Map.of("name", roleName), new RoleRowMapper());
             jdbc.update(INSERT_ROLE_TO_USER_QUERY, Map.of("userId", userId, "roleId", role.getId()));
         } catch (EmptyResultDataAccessException exception) {
             throw new ApiException("No role found by name: " + ROLE_USER.name());
